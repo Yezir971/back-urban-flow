@@ -1,0 +1,43 @@
+name: NestJS CI with Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 2. Configuration Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 3. Installation et Tests
+        run: |
+          npm install
+          npm run test
+          npm run build
+
+      - name: 4. Démarrage de l'API pour le scan
+        run: |
+          npm run start:prod &
+          npx wait-on http://localhost:3000/api # Attend que Swagger soit prêt
+        env:
+          # DATABASE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          PORT: 3000
+
+      - name: 5. Scan OWASP ZAP (Baseline)
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3000/api'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_action: true 
+          issue_title: 'Alerte Sécurité ZAP détectée'
