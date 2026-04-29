@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.17",
-    "@nestjs/core": "^11.1.17",
-    "@nestjs/platform-express": "^11.1.11",
+    "@nestjs/core": "^11.1.18",
+    "@nestjs/platform-express": "^11.1.15",
     "@nestjs/swagger": "^11.4.2",
     "helmet": "^8.1.0",
     "reflect-metadata": "^0.2.2",
