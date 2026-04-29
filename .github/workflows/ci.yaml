@@ -48,23 +48,24 @@ jobs:
           npm ci
           npm run build
 
-      - name: 3. Démarrage de l'API pour le scan
+      - name: 4. Démarrage de l'API pour le scan
         run: |
           npm run start:prod &
           npx wait-on http://localhost:3000/api # Attend que Swagger soit prêt
         env:
           # DATABASE_PASSWORD: ${{ secrets.DB_PASSWORD }}
           PORT: 3000
-      - name: 4. Préparer les permissions pour ZAP
+      - name: 5. Préparer les permissions pour ZAP
         run: chmod -R 777 .
 
-      - name: 5. Scan OWASP ZAP (Baseline)
+      - name: 6. Scan OWASP ZAP (Baseline)
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: 'http://localhost:3000/api'
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_action: true
           issue_title: 'Alerte Sécurité ZAP détectée'
+          artifact_name: 'zap-report'
 
   # -----------------------------------------------
   # JOB 3 — Snyk : vulnérabilités des dépendances
