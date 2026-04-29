@@ -1,12 +1,15 @@
-name: NestJS CI with Security Scan
+name: NestJS Security CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
+  # -----------------------------------------------
+  # JOB 1 — OWASP zap : analyse faille de sécurité
+  # -----------------------------------------------
   build-and-test:
     runs-on: ubuntu-latest
 
@@ -43,3 +46,43 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_action: true 
           issue_title: 'Alerte Sécurité ZAP détectée'
+
+
+  # -----------------------------------------------
+  # JOB 2 — Snyk : vulnérabilités des dépendances
+  # -----------------------------------------------
+  snyk:
+    name: Snyk – Dépendances npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Authentification Snyk
+        uses: snyk/actions/setup@master
+
+      - name: Snyk – Test des dépendances
+        run: snyk test --severity-threshold=high --json > snyk-report.json || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload rapport Snyk
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-report
+          path: snyk-report.json
+
+      - name: Snyk – Bloquer si critique ou élevé
+        run: snyk test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
