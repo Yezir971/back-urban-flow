@@ -3,3 +3,4 @@
 10109	IGNORE	(Modern Web Application - Informationnel uniquement)
 90004	IGNORE	(COEP Header - Nécessaire pour l'affichage de Swagger)
 10055	IGNORE	(CSP Wildcard - Swagger utilise des scripts inline)
+10049	IGNORE	(Cache control configuration)
