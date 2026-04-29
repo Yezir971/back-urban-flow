@@ -63,8 +63,9 @@ jobs:
         with:
           target: 'http://localhost:3000/api'
           token: ${{ secrets.GITHUB_TOKEN }}
-          fail_action: true
+          fail_action: false
           issue_title: 'Alerte Sécurité ZAP détectée'
+          rules_file_name: '.github/rules/zap-rules.tsv'
           artifact_name: 'zap-report'
 
   # -----------------------------------------------

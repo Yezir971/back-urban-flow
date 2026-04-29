@@ -1,0 +1,5 @@
+10096	IGNORE	(Timestamp Disclosure - Faux positif fréquent sur JS)
+10063	IGNORE	(Permissions Policy - Pas critique pour une API)
+10109	IGNORE	(Modern Web Application - Informationnel uniquement)
+90004	IGNORE	(COEP Header - Nécessaire pour l'affichage de Swagger)
+10055	IGNORE	(CSP Wildcard - Swagger utilise des scripts inline)
