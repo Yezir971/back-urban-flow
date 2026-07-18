@@ -1,11 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
+import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
   app.getHttpAdapter().getInstance().disable('x-powered-by');
+
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -25,8 +30,11 @@ async function bootstrap() {
   );
 
   // Empêche le navigateur de stocker des données sensibles en cache
-  app.use((req : any, res: any, next: any) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     next();
@@ -44,6 +52,13 @@ async function bootstrap() {
   // http://localhost:3000/api
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT') || 3000;
+
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}/api`);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('❌ Failed to start the application:', err);
+});

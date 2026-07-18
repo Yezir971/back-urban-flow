@@ -392,9 +392,14 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-=======
-# Local
+# Local env files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
 dist
 .webpack
 .serverless/**/*.zip
