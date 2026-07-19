@@ -26,11 +26,11 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@nestjs/common": "^11.0.17",
+    "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
-    "@nestjs/core": "^11.1.18",
-    "@nestjs/platform-express": "^11.1.18",
-    "@nestjs/swagger": "^11.4.2",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "@nestjs/swagger": "^11.4.6",
     "helmet": "^8.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
