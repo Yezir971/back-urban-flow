@@ -34,7 +34,7 @@ export class SupabaseAuthGuard implements CanActivate {
       );
     }
 
-    request['user'] = user;
+    (request as Request & { user?: unknown }).user = user;
     return true;
   }
 
