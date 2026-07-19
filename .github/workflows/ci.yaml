@@ -53,8 +53,10 @@ jobs:
           npm run start:prod &
           npx wait-on http://localhost:3000/api # Attend que Swagger soit prêt
         env:
-          # DATABASE_PASSWORD: ${{ secrets.DB_PASSWORD }}
           PORT: 3000
+          SUPABASE_URL: "https://dummy-project.supabase.co"
+          SUPABASE_KEY: "dummy-key-pour-passer-la-validation"
+          OTP_URL: "https://dummy-otp-url.com"
       - name: 5. Préparer les permissions pour ZAP
         run: chmod -R 777 .
 
