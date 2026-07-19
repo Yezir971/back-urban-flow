@@ -57,6 +57,17 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Git flow et cycle de développement
+
+Le projet utilise un flux de travail structuré pour sécuriser le code et automatiser les vérifications :
+
+*   **Développement (`feature/*`, `chore/*`, `fix/*`)** : chaque tâche est développée sur une branche isolée.
+*   **Intégration (`staging`)** : branche de regroupement pour tester les fonctionnalités ensemble avant le déploiement final.
+*   **Production (`main`)** : contient uniquement le code stable et testé.
+
+**Règles de protection des branches :**
+Les fusions vers `staging` et `main` requièrent obligatoirement une **validation par Pull Request**, l'approbation d'au moins un relecteur et le succès complet de la **CI (tests automatisés)**.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
