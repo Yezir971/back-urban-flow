@@ -22,7 +22,9 @@ export class GeocodingService {
       );
 
       if (!response.ok) {
-        throw new Error(`API Photon retourné avec le statut ${response.status}`);
+        throw new Error(
+          `API Photon retourné avec le statut ${response.status}`,
+        );
       }
 
       const data = (await response.json()) as {

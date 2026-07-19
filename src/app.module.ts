@@ -6,6 +6,7 @@ import { validateEnv } from './config/env.validation';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
+import { ItineraireModule } from './itineraire/itineraire.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { GeocodingModule } from './geocoding/geocoding.module';
     SupabaseModule,
     AuthModule,
     GeocodingModule,
+    ItineraireModule,
   ],
   controllers: [AppController],
   providers: [AppService],
