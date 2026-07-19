@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { validateEnv } from './config/env.validation';
       isGlobal: true,
       validate: validateEnv,
     }),
+    SupabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

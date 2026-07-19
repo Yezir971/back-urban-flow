@@ -31,6 +31,7 @@
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.28",
     "@nestjs/swagger": "^11.4.6",
+    "@supabase/supabase-js": "^2.110.7",
     "helmet": "^8.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
