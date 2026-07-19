@@ -133,6 +133,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.organization=yezir971
             -Dsonar.projectKey=back-urban-flow
             -Dsonar.sources=src
             -Dsonar.tests=src
