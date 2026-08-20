@@ -8,6 +8,14 @@ import { Request, Response, NextFunction } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Activation de CORS pour permettre les requêtes depuis le frontend Nuxt
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
+
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
   app.getHttpAdapter().getInstance().disable('x-powered-by');
 
@@ -16,15 +24,11 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          // On autorise Swagger à exécuter ses scripts internes
           scriptSrc: ["'self'", "'unsafe-inline'"],
-          // On autorise Swagger à charger ses styles CSS
           styleSrc: ["'self'", "'unsafe-inline'"],
-          // On autorise le logo Swagger
           imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
         },
       },
-      // On désactive cette option car elle empêche souvent Swagger de charger ses fichiers JS
       crossOriginEmbedderPolicy: false,
     }),
   );
@@ -45,11 +49,10 @@ async function bootstrap() {
     .setTitle('API Urban Flow')
     .setDescription('Documentation API Urban Flow')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-
-  // http://localhost:3000/api
   SwaggerModule.setup('api', app, document);
 
   const configService = app.get(ConfigService);
