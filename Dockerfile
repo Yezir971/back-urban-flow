@@ -1,23 +1,17 @@
-# Use the official Node.js image as the base image
-FROM node:20
+# Utiliser Node.js 22 pour le support natif des WebSockets requis par @supabase/supabase-js
+FROM node:22-alpine
 
-# Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
+# Installation des dépendances
 COPY package*.json ./
-
-# Install the application dependencies
 RUN npm install
 
-# Copy the rest of the application files
+# Copie du code source et compilation
 COPY . .
-
-# Build the NestJS application
 RUN npm run build
 
-# Expose the application port
 EXPOSE 3000
 
-# Command to run the application
+# Démarrage de l'API NestJS
 CMD ["node", "dist/main"]
