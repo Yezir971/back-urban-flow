@@ -35,7 +35,49 @@ describe('ItineraireService', () => {
   });
 
   describe('getWalkRoute', () => {
-    it('should return { duree, distance, trace } for a valid route response', async () => {
+    it('should return real multimodal proposals via GraphQL when available', async () => {
+      const mockGqlResponse = {
+        data: {
+          data: {
+            plan: {
+              itineraries: [
+                {
+                  duration: 480,
+                  legs: [
+                    {
+                      mode: 'SUBWAY',
+                      distance: 2500,
+                      route: { shortName: 'D', longName: 'Métro D' },
+                      headsign: 'Gare de Vaise',
+                      legGeometry: {
+                        points: 'xyz_polyline',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      mockedAxios.post.mockResolvedValue(mockGqlResponse);
+
+      const result = await service.getWalkRoute(
+        '45.7578,4.8320',
+        '45.7606,4.8590',
+        'TRANSIT',
+      );
+
+      expect(result.duree).toBe(480);
+      expect(result.distance).toBe(2500);
+      expect(result.trace).toBe('xyz_polyline');
+      expect(result.proposals).toBeDefined();
+      expect(result.proposals.length).toBeGreaterThan(0);
+      expect(mockedAxios.post).toHaveBeenCalled();
+    });
+
+    it('should fallback to REST API if GraphQL fails and return valid route', async () => {
       const mockOtpResponse = {
         data: {
           plan: {
@@ -62,6 +104,7 @@ describe('ItineraireService', () => {
         },
       };
 
+      mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
       mockedAxios.get.mockResolvedValueOnce(mockOtpResponse);
 
       const result = await service.getWalkRoute(
@@ -69,21 +112,18 @@ describe('ItineraireService', () => {
         '48.8606,2.3376',
       );
 
-      expect(result).toEqual({
-        duree: 600,
-        distance: 800,
-        trace: 'abc_polyline',
-      });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(result.duree).toBe(600);
+      expect(result.distance).toBe(800);
+      expect(result.trace).toBe('abc_polyline');
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:8080/otp/routers/default/plan',
         {
           params: {
             fromPlace: '48.8566,2.3522',
             toPlace: '48.8606,2.3376',
-            mode: 'WALK',
+            mode: 'TRANSIT',
           },
-          timeout: 5000,
+          timeout: 15000,
           headers: { Accept: 'application/json' },
         },
       );
@@ -98,6 +138,7 @@ describe('ItineraireService', () => {
         },
       };
 
+      mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
       mockedAxios.get.mockResolvedValueOnce(mockOtpResponse);
 
       await expect(
@@ -106,6 +147,7 @@ describe('ItineraireService', () => {
     });
 
     it('should throw GatewayTimeoutException on Axios error or timeout', async () => {
+      mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
       mockedAxios.get.mockRejectedValueOnce(new Error('Timeout'));
 
       await expect(

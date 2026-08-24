@@ -17,8 +17,8 @@ export class ItineraireController {
   async getRoute(
     @Query('start') start: string,
     @Query('end') end: string,
-    @Query('mode') mode = 'WALK',
-  ) {
+    @Query('mode') mode: string,
+  ): Promise<any> {
     if (!start || !end) {
       throw new BadRequestException('Paramètres start et end requis');
     }
