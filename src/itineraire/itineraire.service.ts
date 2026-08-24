@@ -100,7 +100,8 @@ export class ItineraireService {
   }
 
   /**
-   * Calcule les 3 propositions d'itinéraires multimodaux réels en direct depuis OpenTripPlanner
+   * Calcule les propositions d'itinéraires multimodaux réels en direct depuis OpenTripPlanner
+   * (Transports TCL, Marche, Vélo, Voiture)
    */
   async getWalkRoute(
     start: string,
@@ -126,7 +127,7 @@ export class ItineraireService {
         this.getOtpRoute(startLat, startLon, endLat, endLon, transitModeParam),
         this.getOtpRoute(startLat, startLon, endLat, endLon, 'WALK'),
         this.getOtpRoute(startLat, startLon, endLat, endLon, 'BICYCLE'),
-        this.getOtpRoute(startLat, startLon, endLat, endLon, 'CAR')
+        this.getOtpRoute(startLat, startLon, endLat, endLon, 'CAR'),
       ]);
 
       const proposals: ItineraryProposal[] = [];
@@ -213,47 +214,7 @@ export class ItineraireService {
         });
       }
 
-      // B. PROPOSITION MARCHE À PIED (OpenStreetMap Piéton)
-      if (walkItinerary && walkItinerary.legs.length > 0) {
-        const totalDurationMins = Math.max(1, Math.round(walkItinerary.duration / 60));
-        const totalDistanceMeters = walkItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
-        const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
-
-        const formattedLegs: ItineraryLegFormatted[] = walkItinerary.legs.map((leg) => {
-          const legDurMins = Math.max(1, Math.round((leg.duration || walkItinerary.duration) / 60));
-          return {
-            mode: 'WALK',
-            title: `Marche (${legDurMins} min)`,
-            instruction: `Itinéraire piéton direct (${distanceKm} km)`,
-            durationMinutes: legDurMins,
-            distanceMeters: Math.round(leg.distance || totalDistanceMeters),
-            status: 'IN_PROGRESS',
-            departureStatus: 'ON_TIME',
-            departureTimeFormatted: this.formatTimeFromEpoch(leg.startTime),
-            legGeometry: leg.legGeometry,
-          };
-        });
-
-        proposals.push({
-          id: 'walk-otp',
-          type: 'WALK',
-          title: 'Marche à pied',
-          subtitle: `${distanceKm} km • Trajet santé`,
-          badge: 'WALK',
-          badgeColor: '#10b981',
-          durationMinutes: totalDurationMins,
-          distanceMeters: totalDistanceMeters,
-          co2SavedKg: 0.0,
-          tag: 'ECO-HERO',
-          priceApprox: 'Free',
-          departureStatus: 'ON_TIME',
-          arrivalTime: this.formatArrivalTime(totalDurationMins),
-          trace: this.extractFullTrace(walkItinerary),
-          legs: formattedLegs,
-        });
-      }
-
-      // C. PROPOSITION VÉLO / VÉLO'V (OpenStreetMap Cyclable)
+      // B. PROPOSITION VÉLO / VÉLO'V (OpenStreetMap Cyclable)
       if (bikeItinerary && bikeItinerary.legs.length > 0) {
         const totalDurationMins = Math.max(1, Math.round(bikeItinerary.duration / 60));
         const totalDistanceMeters = bikeItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
@@ -293,12 +254,98 @@ export class ItineraireService {
         });
       }
 
+      // C. PROPOSITION VOITURE (OpenStreetMap Réseau Routier)
+      if (carItinerary && carItinerary.legs.length > 0) {
+        const totalDurationMins = Math.max(1, Math.round(carItinerary.duration / 60));
+        const totalDistanceMeters = carItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
+        const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
+        const fuelCost = (parseFloat(distanceKm) * 0.15).toFixed(2);
+
+        const formattedLegs: ItineraryLegFormatted[] = carItinerary.legs.map((leg) => {
+          const legDurMins = Math.max(1, Math.round((leg.duration || carItinerary.duration) / 60));
+          return {
+            mode: 'CAR',
+            title: `Trajet en voiture (${legDurMins} min)`,
+            instruction: `Via réseau routier (${distanceKm} km)`,
+            durationMinutes: legDurMins,
+            distanceMeters: Math.round(leg.distance || totalDistanceMeters),
+            status: 'IN_PROGRESS',
+            departureStatus: 'ON_TIME',
+            departureTimeFormatted: this.formatTimeFromEpoch(leg.startTime),
+            legGeometry: leg.legGeometry,
+          };
+        });
+
+        proposals.push({
+          id: 'car-otp',
+          type: 'CAR',
+          title: 'Voiture',
+          subtitle: `${distanceKm} km • Réseau routier`,
+          badge: 'CAR',
+          badgeColor: '#64748b',
+          durationMinutes: totalDurationMins,
+          distanceMeters: totalDistanceMeters,
+          co2SavedKg: 0.0,
+          priceApprox: `Carburant ~${fuelCost}€`,
+          departureStatus: 'ON_TIME',
+          arrivalTime: this.formatArrivalTime(totalDurationMins),
+          trace: this.extractFullTrace(carItinerary),
+          legs: formattedLegs,
+        });
+      }
+
+      // D. PROPOSITION MARCHE À PIED (OpenStreetMap Piéton)
+      if (walkItinerary && walkItinerary.legs.length > 0) {
+        const totalDurationMins = Math.max(1, Math.round(walkItinerary.duration / 60));
+        const totalDistanceMeters = walkItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
+        const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
+
+        const formattedLegs: ItineraryLegFormatted[] = walkItinerary.legs.map((leg) => {
+          const legDurMins = Math.max(1, Math.round((leg.duration || walkItinerary.duration) / 60));
+          return {
+            mode: 'WALK',
+            title: `Marche (${legDurMins} min)`,
+            instruction: `Itinéraire piéton direct (${distanceKm} km)`,
+            durationMinutes: legDurMins,
+            distanceMeters: Math.round(leg.distance || totalDistanceMeters),
+            status: 'IN_PROGRESS',
+            departureStatus: 'ON_TIME',
+            departureTimeFormatted: this.formatTimeFromEpoch(leg.startTime),
+            legGeometry: leg.legGeometry,
+          };
+        });
+
+        proposals.push({
+          id: 'walk-otp',
+          type: 'WALK',
+          title: 'Marche à pied',
+          subtitle: `${distanceKm} km • Trajet santé`,
+          badge: 'WALK',
+          badgeColor: '#10b981',
+          durationMinutes: totalDurationMins,
+          distanceMeters: totalDistanceMeters,
+          co2SavedKg: 0.0,
+          tag: 'ECO-HERO',
+          priceApprox: 'Gratuit',
+          departureStatus: 'ON_TIME',
+          arrivalTime: this.formatArrivalTime(totalDurationMins),
+          trace: this.extractFullTrace(walkItinerary),
+          legs: formattedLegs,
+        });
+      }
+
       if (proposals.length === 0) {
         throw new NotFoundException('Aucun itinéraire trouvé pour ce trajet');
       }
 
-      // Ordonne selon le mode sélectionné en filtre
-      if (upperMode.includes('BUS') || upperMode.includes('TRANSIT') || upperMode.includes('TRAIN')) {
+      // Ordonne selon le filtre sélectionné par l'utilisateur
+      if (upperMode.includes('CAR')) {
+        const carIdx = proposals.findIndex((p) => p.type === 'CAR');
+        if (carIdx > 0) {
+          const [carProp] = proposals.splice(carIdx, 1);
+          proposals.unshift(carProp);
+        }
+      } else if (upperMode.includes('BUS') || upperMode.includes('TRANSIT') || upperMode.includes('TRAIN')) {
         const transitIdx = proposals.findIndex((p) => p.type === 'TRANSIT');
         if (transitIdx > 0) {
           const [transitProp] = proposals.splice(transitIdx, 1);
@@ -310,6 +357,12 @@ export class ItineraireService {
           const [bikeProp] = proposals.splice(bikeIdx, 1);
           proposals.unshift(bikeProp);
         }
+      } else if (upperMode.includes('WALK')) {
+        const walkIdx = proposals.findIndex((p) => p.type === 'WALK');
+        if (walkIdx > 0) {
+          const [walkProp] = proposals.splice(walkIdx, 1);
+          proposals.unshift(walkProp);
+        }
       }
 
       const selected = proposals[0];
@@ -318,7 +371,7 @@ export class ItineraireService {
         duree: selected.durationMinutes * 60,
         distance: selected.distanceMeters,
         trace: selected.trace,
-        legs: transitItinerary?.legs || walkItinerary?.legs || bikeItinerary?.legs,
+        legs: transitItinerary?.legs || bikeItinerary?.legs || carItinerary?.legs || walkItinerary?.legs,
         proposals,
       };
     } catch (err) {
@@ -347,14 +400,12 @@ export class ItineraireService {
       let modesGql = '{mode: WALK}';
       if (mode.includes('BICYCLE')) {
         modesGql = '{mode: BICYCLE}';
+      } else if (mode.includes('CAR')) {
+        modesGql = '{mode: CAR}';
       } else if (mode.includes('BUS')) {
         modesGql = '{mode: BUS}, {mode: WALK}';
       } else if (mode.includes('TRANSIT')) {
         modesGql = '{mode: TRANSIT}, {mode: WALK}';
-      } else if (mode.includes('WALK')) {
-        modesGql = '{mode: WALK}';
-      } else if (mode.includes('CAR')){
-        modesGql = '{mode: CAR}';
       }
 
       const gqlBody = {
@@ -435,7 +486,6 @@ export class ItineraireService {
         return itineraries[0];
       }
     } catch {
-
       // Aucun résultat
     }
 
