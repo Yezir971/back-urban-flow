@@ -7,6 +7,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { ItineraireModule } from './itineraire/itineraire.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ItineraireModule } from './itineraire/itineraire.module';
     AuthModule,
     GeocodingModule,
     ItineraireModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
