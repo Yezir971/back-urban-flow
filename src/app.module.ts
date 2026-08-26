@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { ItineraireModule } from './itineraire/itineraire.module';
 import { ProfileModule } from './profile/profile.module';
+import { UserPreferencesModule } from './user-preferences/user-preferences.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProfileModule } from './profile/profile.module';
     GeocodingModule,
     ItineraireModule,
     ProfileModule,
+    UserPreferencesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

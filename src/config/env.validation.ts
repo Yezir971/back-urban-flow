@@ -9,7 +9,10 @@ export const envSchema = z.object({
     .string()
     .url({ message: "SUPABASE_URL n'est pas une URL valide" }),
   SUPABASE_KEY: z.string().min(1, { message: "SUPABASE_KEY n'est pas valide" }),
-  SUPABASE_PUBLIC_URL: z.string().url().optional(),
+  SUPABASE_PUBLIC_URL: z
+    .string()
+    .url({ message: "SUPABASE_PUBLIC_URL n'est pas une URL valide" })
+    .default('http://localhost:8000'),
   OTP_URL: z.string().url({ message: "OTP_URL n'est pas une URL valide" }),
 });
 

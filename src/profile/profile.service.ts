@@ -42,26 +42,15 @@ export class ProfileService {
 
   private formatAvatarUrl(url?: string): string {
     if (!url) return '';
-    const publicBaseUrl =
-      this.configService.get<string>('SUPABASE_PUBLIC_URL') ||
-      (this.configService.get<string>('NODE_ENV') === 'production'
-        ? 'https://auth.urban-flow-lyon.fr'
-        : 'http://localhost:8000');
-    const cleanBaseUrl = publicBaseUrl.replace(/\/$/, '');
+    const rawUrl = this.configService.get<string>('SUPABASE_PUBLIC_URL');
+    const cleanBaseUrl = (rawUrl || '').replace(/\/$/, '');
 
-    if (
-      url.startsWith('http://kong:8000') ||
-      url.startsWith('http://supabase-kong:8000')
-    ) {
-      return url.replace(/^http:\/\/(?:supabase-)?kong:8000/, cleanBaseUrl);
-    }
-    if (url.startsWith('http://auth.urban-flow-lyon.fr:8000')) {
-      return url.replace(
-        /^http:\/\/auth\.urban-flow-lyon\.fr:8000/,
-        cleanBaseUrl,
-      );
-    }
-    return url;
+    if (!cleanBaseUrl) return url;
+
+    // Remplacement des hôtes internes docker par l'URL publique fournie en variable d'environnement
+    return url
+      .replace(/^http:\/\/(?:supabase-)?kong(?::\d+)?/, cleanBaseUrl)
+      .replace(/^http:\/\/localhost:8000/, cleanBaseUrl);
   }
 
   private getLevelLabel(level: number): string {
@@ -231,12 +220,8 @@ export class ProfileService {
       );
     }
 
-    const publicBaseUrl =
-      this.configService.get<string>('SUPABASE_PUBLIC_URL') ||
-      (this.configService.get<string>('NODE_ENV') === 'production'
-        ? 'https://auth.urban-flow-lyon.fr'
-        : 'http://localhost:8000');
-    const cleanBaseUrl = publicBaseUrl.replace(/\/$/, '');
+    const rawUrl = this.configService.get<string>('SUPABASE_PUBLIC_URL');
+    const cleanBaseUrl = (rawUrl || '').replace(/\/$/, '');
     const avatarUrl = `${cleanBaseUrl}/storage/v1/object/public/avatars/${filePath}`;
 
     const { data: updatedProfile, error: updateError } = await this.supabase
