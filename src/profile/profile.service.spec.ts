@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProfileService } from './profile.service';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
 
+import { ConfigService } from '@nestjs/config';
+
 describe('ProfileService', () => {
   let service: ProfileService;
   let mockSupabase: any;
@@ -29,6 +31,12 @@ describe('ProfileService', () => {
         {
           provide: SUPABASE_CLIENT,
           useValue: mockSupabase,
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('http://localhost:8000'),
+          },
         },
       ],
     }).compile();

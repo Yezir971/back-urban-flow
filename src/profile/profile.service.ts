@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../supabase/supabase.constants';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -36,7 +37,32 @@ export class ProfileService {
 
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient,
+    private readonly configService: ConfigService,
   ) {}
+
+  private formatAvatarUrl(url?: string): string {
+    if (!url) return '';
+    const publicBaseUrl =
+      this.configService.get<string>('SUPABASE_PUBLIC_URL') ||
+      (this.configService.get<string>('NODE_ENV') === 'production'
+        ? 'https://auth.urban-flow-lyon.fr'
+        : 'http://localhost:8000');
+    const cleanBaseUrl = publicBaseUrl.replace(/\/$/, '');
+
+    if (
+      url.startsWith('http://kong:8000') ||
+      url.startsWith('http://supabase-kong:8000')
+    ) {
+      return url.replace(/^http:\/\/(?:supabase-)?kong:8000/, cleanBaseUrl);
+    }
+    if (url.startsWith('http://auth.urban-flow-lyon.fr:8000')) {
+      return url.replace(
+        /^http:\/\/auth\.urban-flow-lyon\.fr:8000/,
+        cleanBaseUrl,
+      );
+    }
+    return url;
+  }
 
   private getLevelLabel(level: number): string {
     switch (level) {
@@ -79,17 +105,33 @@ export class ProfileService {
         .single();
 
       if (insertError || !newProfile) {
-        throw new NotFoundException('Profil utilisateur introuvable');
+        this.logger.warn(
+          `Erreur insertion profil pour ${userId}: ${insertError?.message}`,
+        );
+        return {
+          id: userId,
+          username: defaultUsername,
+          avatar_url: '',
+          level: 1,
+          level_label: 'Voyageur Écolo',
+          total_co2_saved_kg: 0,
+          total_distance_km: 0,
+          eco_points: 0,
+          role: 'user',
+          created_at: new Date().toISOString(),
+        };
       }
 
       return {
         ...newProfile,
+        avatar_url: this.formatAvatarUrl(newProfile.avatar_url),
         level_label: this.getLevelLabel(newProfile.level || 1),
       };
     }
 
     return {
       ...profile,
+      avatar_url: this.formatAvatarUrl(profile.avatar_url),
       level_label: this.getLevelLabel(profile.level || 1),
     };
   }
@@ -128,6 +170,7 @@ export class ProfileService {
 
     return {
       ...data,
+      avatar_url: this.formatAvatarUrl(data.avatar_url),
       level_label: this.getLevelLabel(data.level || 1),
     };
   }
@@ -172,6 +215,7 @@ export class ProfileService {
 
     const fileExt = file.originalname?.split('.').pop() || 'jpg';
     const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
+    console.log(`Uploading avatar for user ${userId} to path: ${filePath}`);
 
     const { error: uploadError } = await this.supabase.storage
       .from('avatars')
@@ -187,11 +231,13 @@ export class ProfileService {
       );
     }
 
-    const { data: publicUrlData } = this.supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    const avatarUrl = publicUrlData.publicUrl;
+    const publicBaseUrl =
+      this.configService.get<string>('SUPABASE_PUBLIC_URL') ||
+      (this.configService.get<string>('NODE_ENV') === 'production'
+        ? 'https://auth.urban-flow-lyon.fr'
+        : 'http://localhost:8000');
+    const cleanBaseUrl = publicBaseUrl.replace(/\/$/, '');
+    const avatarUrl = `${cleanBaseUrl}/storage/v1/object/public/avatars/${filePath}`;
 
     const { data: updatedProfile, error: updateError } = await this.supabase
       .from('profiles')
@@ -211,6 +257,7 @@ export class ProfileService {
 
     return {
       ...updatedProfile,
+      avatar_url: this.formatAvatarUrl(updatedProfile.avatar_url),
       level_label: this.getLevelLabel(updatedProfile.level || 1),
     };
   }
