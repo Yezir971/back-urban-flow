@@ -132,11 +132,15 @@ export class ItineraireService {
 
       const proposals: ItineraryProposal[] = [];
 
+      // Distance de référence voiture (trajet routier pour comparaison d'émissions)
+      const carReferenceMeters =
+        carItinerary?.legs?.reduce((acc, l) => acc + (l.distance || 0), 0) || 0;
+
       // A. PROPOSITION TRANSPORTS EN COMMUN (TCL Lyon : Métro, Tram, Bus)
       if (transitItinerary && transitItinerary.legs.length > 0) {
         const totalDurationMins = Math.max(1, Math.round(transitItinerary.duration / 60));
         const totalDistanceMeters = transitItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
-        const co2SavedKg = parseFloat(((totalDistanceMeters / 1000) * 0.12 * 0.75).toFixed(1));
+        const co2SavedKg = this.calculateCo2Savings(transitItinerary.legs, carReferenceMeters);
 
         const transitLegs = transitItinerary.legs.filter((l) =>
           ['SUBWAY', 'TRAM', 'BUS', 'TRANSIT', 'RAIL'].includes(l.mode?.toUpperCase()),
@@ -219,7 +223,7 @@ export class ItineraireService {
         const totalDurationMins = Math.max(1, Math.round(bikeItinerary.duration / 60));
         const totalDistanceMeters = bikeItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
         const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
-        const co2SavedKg = parseFloat(((totalDistanceMeters / 1000) * 0.12 * 0.95).toFixed(1));
+        const co2SavedKg = this.calculateCo2Savings(bikeItinerary.legs, carReferenceMeters);
 
         const formattedLegs: ItineraryLegFormatted[] = bikeItinerary.legs.map((leg) => {
           const legDurMins = Math.max(1, Math.round((leg.duration || bikeItinerary.duration) / 60));
@@ -299,6 +303,7 @@ export class ItineraireService {
         const totalDurationMins = Math.max(1, Math.round(walkItinerary.duration / 60));
         const totalDistanceMeters = walkItinerary.legs.reduce((acc, l) => acc + (l.distance || 0), 0);
         const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
+        const co2SavedKg = this.calculateCo2Savings(walkItinerary.legs, carReferenceMeters);
 
         const formattedLegs: ItineraryLegFormatted[] = walkItinerary.legs.map((leg) => {
           const legDurMins = Math.max(1, Math.round((leg.duration || walkItinerary.duration) / 60));
@@ -324,7 +329,7 @@ export class ItineraireService {
           badgeColor: '#10b981',
           durationMinutes: totalDurationMins,
           distanceMeters: totalDistanceMeters,
-          co2SavedKg: 0.0,
+          co2SavedKg,
           tag: 'ECO-HERO',
           priceApprox: 'Gratuit',
           departureStatus: 'ON_TIME',
@@ -514,5 +519,52 @@ export class ItineraireService {
     const h = d.getHours().toString().padStart(2, '0');
     const m = d.getMinutes().toString().padStart(2, '0');
     return `${h}:${m}`;
+  }
+
+  /**
+   * Facteurs d'émission officiels ADEME / Base Carbone & Impact CO2 (g CO2e / passager.km)
+   */
+  private readonly EMISSION_FACTORS_G_PER_KM: Record<string, number> = {
+    CAR: 218, // Voiture thermique moyenne solo (référence routière)
+    BUS: 110, // Bus urbain thermique/hybride
+    TRAM: 3.0, // Tramway électrique
+    SUBWAY: 2.5, // Métro électrique
+    METRO: 2.5,
+    RAIL: 4.5, // Train / RER
+    TRANSIT: 60, // Moyenne globale transit si non-spécifié
+    BICYCLE: 0, // Vélo musculaire
+    SCOOTER: 0, // Trottinette
+    WALK: 0, // Marche à pied
+  };
+
+  /**
+   * Calcule le CO2 économisé par rapport à la voiture thermique de référence (en kg avec 2 décimales)
+   * CO2 économisé = CO2_voiture (Distance_ref * 218g/km) - CO2_émis_mode (somme des legs * facteur_mode)
+   */
+  private calculateCo2Savings(
+    legs: OtpLeg[],
+    carReferenceMeters?: number,
+  ): number {
+    const totalDistanceMeters = legs.reduce(
+      (acc, l) => acc + (l.distance || 0),
+      0,
+    );
+    const refDistanceKm =
+      (carReferenceMeters && carReferenceMeters > 0
+        ? carReferenceMeters
+        : totalDistanceMeters) / 1000;
+    const carEmissionG =
+      refDistanceKm * (this.EMISSION_FACTORS_G_PER_KM.CAR || 218);
+
+    let modeEmissionG = 0;
+    for (const leg of legs) {
+      const legKm = (leg.distance || 0) / 1000;
+      const upperMode = (leg.mode || 'WALK').toUpperCase();
+      const factor = this.EMISSION_FACTORS_G_PER_KM[upperMode] ?? 0;
+      modeEmissionG += legKm * factor;
+    }
+
+    const savedG = Math.max(0, carEmissionG - modeEmissionG);
+    return parseFloat((savedG / 1000).toFixed(2));
   }
 }
