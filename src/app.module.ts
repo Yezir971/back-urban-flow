@@ -9,6 +9,7 @@ import { GeocodingModule } from './geocoding/geocoding.module';
 import { ItineraireModule } from './itineraire/itineraire.module';
 import { ProfileModule } from './profile/profile.module';
 import { UserPreferencesModule } from './user-preferences/user-preferences.module';
+import { TripsModule } from './trips/trips.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserPreferencesModule } from './user-preferences/user-preferences.modul
     ItineraireModule,
     ProfileModule,
     UserPreferencesModule,
+    TripsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

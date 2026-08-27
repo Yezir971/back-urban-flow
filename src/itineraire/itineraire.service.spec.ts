@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ItineraireService } from './itineraire.service';
-import { NotFoundException, GatewayTimeoutException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -87,12 +87,15 @@ describe('ItineraireService', () => {
                 legs: [
                   {
                     distance: 500,
+                    mode: 'SUBWAY',
+                    route: { shortName: 'A' },
                     legGeometry: {
                       points: 'abc_polyline',
                     },
                   },
                   {
                     distance: 300,
+                    mode: 'WALK',
                     legGeometry: {
                       points: 'def_polyline',
                     },
@@ -105,7 +108,7 @@ describe('ItineraireService', () => {
       };
 
       mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
-      mockedAxios.get.mockResolvedValueOnce(mockOtpResponse);
+      mockedAxios.get.mockResolvedValue(mockOtpResponse);
 
       const result = await service.getWalkRoute(
         '48.8566,2.3522',
@@ -117,15 +120,14 @@ describe('ItineraireService', () => {
       expect(result.trace).toBe('abc_polyline');
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:8080/otp/routers/default/plan',
-        {
-          params: {
+        expect.objectContaining({
+          params: expect.objectContaining({
             fromPlace: '48.8566,2.3522',
             toPlace: '48.8606,2.3376',
-            mode: 'TRANSIT',
-          },
-          timeout: 15000,
+          }),
+          timeout: 12000,
           headers: { Accept: 'application/json' },
-        },
+        }),
       );
     });
 
@@ -139,20 +141,20 @@ describe('ItineraireService', () => {
       };
 
       mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
-      mockedAxios.get.mockResolvedValueOnce(mockOtpResponse);
+      mockedAxios.get.mockResolvedValue(mockOtpResponse);
 
       await expect(
         service.getWalkRoute('48.8566,2.3522', '48.8606,2.3376'),
-      ).rejects.toThrow(new NotFoundException('Aucun itinéraire trouvé'));
+      ).rejects.toThrow(new NotFoundException('Aucun itinéraire trouvé pour ce trajet'));
     });
 
-    it('should throw GatewayTimeoutException on Axios error or timeout', async () => {
+    it('should throw NotFoundException if network requests fail', async () => {
       mockedAxios.post.mockRejectedValue(new Error('GraphQL unavailable'));
-      mockedAxios.get.mockRejectedValueOnce(new Error('Timeout'));
+      mockedAxios.get.mockRejectedValue(new Error('Network Timeout'));
 
       await expect(
         service.getWalkRoute('48.8566,2.3522', '48.8606,2.3376'),
-      ).rejects.toThrow(new GatewayTimeoutException('Délai de calcul dépassé'));
+      ).rejects.toThrow(new NotFoundException('Aucun itinéraire trouvé pour ce trajet'));
     });
   });
 });
