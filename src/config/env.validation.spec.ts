@@ -27,6 +27,7 @@ describe('validateEnv', () => {
       PORT: 3000,
       SUPABASE_URL: 'https://example.supabase.co',
       SUPABASE_KEY: 'some-key',
+      SUPABASE_PUBLIC_URL: 'http://localhost:8000',
       OTP_URL: 'https://otp.example.com',
     });
   });
