@@ -35,7 +35,8 @@ describe('TripsService', () => {
 
   describe('recordTrip', () => {
     it('should record a completed trip successfully', async () => {
-      const mockTripData = {
+      const now = new Date().toISOString();
+      const mockTripDbRow = {
         id: 'trip-123',
         user_id: 'user-1',
         start_name: 'Gare Part-Dieu',
@@ -49,11 +50,11 @@ describe('TripsService', () => {
         distance_meters: 2500,
         co2_saved_kg: 0.54,
         points_earned: 10,
-        completed_at: new Date().toISOString(),
+        completed_at: now,
       };
 
       const selectMock = jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: mockTripData, error: null }),
+        single: jest.fn().mockResolvedValue({ data: mockTripDbRow, error: null }),
       });
       const insertMock = jest.fn().mockReturnValue({
         select: selectMock,
@@ -76,7 +77,28 @@ describe('TripsService', () => {
         points_earned: 10,
       });
 
-      expect(result).toEqual(mockTripData);
+      expect(result).toEqual({
+        id: 'trip-123',
+        user_id: 'user-1',
+        start_point: 'Gare Part-Dieu',
+        end_point: 'Bellecour',
+        start_name: 'Gare Part-Dieu',
+        end_name: 'Bellecour',
+        start_lat: 45.76,
+        start_lon: 4.86,
+        end_lat: 45.75,
+        end_lon: 4.83,
+        mode: 'transit',
+        line_name: null,
+        duration_minutes: 12,
+        distance_km: 2.5,
+        distance_meters: 2500,
+        co2_saved_kg: 0.54,
+        points_earned: 10,
+        trace: null,
+        timestamp: now,
+        completed_at: now,
+      });
       expect(mockSupabase.from).toHaveBeenCalledWith('user_trips');
     });
 
