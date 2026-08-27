@@ -10,6 +10,7 @@ import { ItineraireModule } from './itineraire/itineraire.module';
 import { ProfileModule } from './profile/profile.module';
 import { UserPreferencesModule } from './user-preferences/user-preferences.module';
 import { TripsModule } from './trips/trips.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TripsModule } from './trips/trips.module';
     ProfileModule,
     UserPreferencesModule,
     TripsModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
