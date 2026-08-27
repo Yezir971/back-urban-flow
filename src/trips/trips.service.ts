@@ -12,6 +12,8 @@ import { CreateTripDto } from './dto/create-trip.dto';
 export interface UserTripResponse {
   id: string;
   user_id: string;
+  start_point: string;
+  end_point: string;
   start_name: string;
   end_name: string;
   start_lat: number;
@@ -21,10 +23,12 @@ export interface UserTripResponse {
   mode: string;
   line_name?: string | null;
   duration_minutes: number;
+  distance_km: number;
   distance_meters: number;
   co2_saved_kg: number;
   points_earned: number;
   trace?: string | null;
+  timestamp: string;
   completed_at: string;
 }
 
@@ -47,6 +51,35 @@ export class TripsService {
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient,
   ) {}
+
+  private mapTripRow(row: any): UserTripResponse {
+    const distanceMeters = Number(row.distance_meters || 0);
+    const distanceKm = Number((distanceMeters / 1000).toFixed(2));
+    const timestamp = row.completed_at || new Date().toISOString();
+
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      start_point: row.start_name || 'Départ',
+      end_point: row.end_name || 'Arrivée',
+      start_name: row.start_name || 'Départ',
+      end_name: row.end_name || 'Arrivée',
+      start_lat: Number(row.start_lat || 0),
+      start_lon: Number(row.start_lon || 0),
+      end_lat: Number(row.end_lat || 0),
+      end_lon: Number(row.end_lon || 0),
+      mode: (row.mode || 'WALK').toLowerCase(),
+      line_name: row.line_name || null,
+      duration_minutes: Number(row.duration_minutes || 0),
+      distance_km: distanceKm,
+      distance_meters: distanceMeters,
+      co2_saved_kg: Number(row.co2_saved_kg || 0),
+      points_earned: Number(row.points_earned || 0),
+      trace: row.trace || null,
+      timestamp: timestamp,
+      completed_at: timestamp,
+    };
+  }
 
   async recordTrip(
     userId: string,
@@ -83,7 +116,7 @@ export class TripsService {
       );
     }
 
-    return data as UserTripResponse;
+    return this.mapTripRow(data);
   }
 
   async getRecentTrips(
@@ -107,7 +140,7 @@ export class TripsService {
       );
     }
 
-    return (data || []) as UserTripResponse[];
+    return (data || []).map((row: any) => this.mapTripRow(row));
   }
 
   async getCo2Stats(userId: string): Promise<UserCo2StatsResponse> {
