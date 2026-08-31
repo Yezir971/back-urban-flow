@@ -44,6 +44,21 @@ export interface UserCo2StatsResponse {
   trees_label: string;
 }
 
+export interface WeeklyCo2Day {
+  day: string;
+  date: string;
+  actual_co2: number;
+  car_co2: number;
+  co2_saved: number;
+}
+
+export interface WeeklyCo2Response {
+  days: WeeklyCo2Day[];
+  total_actual_co2: number;
+  total_car_co2: number;
+  total_co2_saved: number;
+}
+
 @Injectable()
 export class TripsService {
   private readonly logger = new Logger(TripsService.name);
@@ -232,6 +247,77 @@ export class TripsService {
       equivalent_car_km: equivalentCarKm,
       equivalent_label: equivalentLabel,
       trees_label: equivalentLabel,
+    };
+  }
+
+  async getWeeklyCo2(userId: string): Promise<WeeklyCo2Response> {
+    this.logger.log(`Calcul de la consommation CO2 hebdomadaire pour ${userId}`);
+
+    const now = new Date();
+    // 7 derniers jours (du 6e jour précédent jusqu'à aujourd'hui)
+    const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const days: WeeklyCo2Day[] = [];
+
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    const startIso = startDate.toISOString();
+
+    const { data: trips } = await this.supabase
+      .from('user_trips')
+      .select('distance_meters, co2_saved_kg, completed_at, mode')
+      .eq('user_id', userId)
+      .gte('completed_at', startIso)
+      .order('completed_at', { ascending: true });
+
+    let totalActual = 0;
+    let totalCar = 0;
+    let totalSaved = 0;
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayName = dayNames[d.getDay()];
+
+      let dayActualCo2 = 0;
+      let dayCarCo2 = 0;
+      let daySavedCo2 = 0;
+
+      if (trips && trips.length > 0) {
+        for (const trip of trips) {
+          if (trip.completed_at && trip.completed_at.startsWith(dateStr)) {
+            const distanceKm = (Number(trip.distance_meters) || 0) / 1000;
+            const carCo2 = Number((distanceKm * 0.218).toFixed(2));
+            const savedCo2 = Number(trip.co2_saved_kg || 0);
+            const actualCo2 = Math.max(0, Number((carCo2 - savedCo2).toFixed(2)));
+
+            dayCarCo2 += carCo2;
+            daySavedCo2 += savedCo2;
+            dayActualCo2 += actualCo2;
+          }
+        }
+      }
+
+      const roundedActual = Number(dayActualCo2.toFixed(2));
+      const roundedCar = Number(dayCarCo2.toFixed(2));
+      const roundedSaved = Number(daySavedCo2.toFixed(2));
+
+      totalActual += roundedActual;
+      totalCar += roundedCar;
+      totalSaved += roundedSaved;
+
+      days.push({
+        day: dayName,
+        date: dateStr,
+        actual_co2: roundedActual,
+        car_co2: roundedCar,
+        co2_saved: roundedSaved,
+      });
+    }
+
+    return {
+      days,
+      total_actual_co2: Number(totalActual.toFixed(2)),
+      total_car_co2: Number(totalCar.toFixed(2)),
+      total_co2_saved: Number(totalSaved.toFixed(2)),
     };
   }
 }
